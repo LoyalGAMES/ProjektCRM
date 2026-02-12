@@ -11,9 +11,20 @@
     },
     "ios": {
       "supportsTablet": true,
+      "requireFullScreen": false,
       "bundleIdentifier": "com.goaltracker.smart",
+      "buildNumber": "1",
       "infoPlist": {
-        "UISupportsDocumentBrowser": true
+        "UISupportsDocumentBrowser": true,
+        "UISupportedInterfaceOrientations~ipad": [
+          "UIInterfaceOrientationPortrait",
+          "UIInterfaceOrientationPortraitUpsideDown",
+          "UIInterfaceOrientationLandscapeLeft",
+          "UIInterfaceOrientationLandscapeRight"
+        ],
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
       }
     },
     "android": {
@@ -21,6 +32,18 @@
         "backgroundColor": "#0A0E1A"
       },
       "package": "com.goaltracker.smart"
+    },
+    "extra": {
+      "eas": {
+        "projectId": ""
+      }
+    },
+    "owner": "",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": ""
     },
     "plugins": [
       "expo-font"
