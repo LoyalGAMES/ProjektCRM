@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "GoalTracker SMART",
+    "slug": "goal-tracker-smart",
+    "version": "1.0.0",
+    "orientation": "default",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#0A0E1A"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.goaltracker.smart",
+      "infoPlist": {
+        "UISupportsDocumentBrowser": true
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0A0E1A"
+      },
+      "package": "com.goaltracker.smart"
+    },
+    "plugins": [
+      "expo-font"
+    ]
+  }
+}

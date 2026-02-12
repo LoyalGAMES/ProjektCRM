@@ -1,0 +1,16 @@
+{
+  "name": "goal-tracker-smart",
+  "version": "1.0.0",
+  "description": "Personal SMART Goal Tracking App with MySQL sync",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "backend": "cd backend && npm start",
+    "backend:dev": "cd backend && npm run dev",
+    "frontend": "cd frontend && npx expo start",
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install"
+  }
+}
