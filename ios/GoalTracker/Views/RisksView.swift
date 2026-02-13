@@ -11,101 +11,95 @@ struct RisksView: View {
     let impactValues: [String: Double] = ["negligible": 0.1, "minor": 0.3, "moderate": 0.5, "major": 0.7, "critical": 0.9]
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    if isLoading {
-                        ProgressView().frame(maxWidth: .infinity).padding(60)
-                    } else {
-                        // Matrix
-                        SectionHeader(title: "Macierz Ryzyk")
-                        Text("Prawdopodobieństwo vs Wpływ")
-                            .font(.caption).foregroundColor(.text2)
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 20) {
+                Text("Macierz Ryzyk")
+                    .font(.system(size: 24, weight: .heavy, design: .rounded))
+                    .foregroundColor(.panelText)
 
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            matrixGrid
-                        }
+                if isLoading {
+                    ProgressView().tint(.accent).frame(maxWidth: .infinity).padding(60)
+                } else {
+                    // Stats
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                        StatCard(value: "\(allRisks.filter { $0.scoreValue >= 0.5 }.count)", label: "Krytyczne", color: .dangerRed)
+                        StatCard(value: "\(allRisks.filter { $0.scoreValue >= 0.3 && $0.scoreValue < 0.5 }.count)", label: "Wysokie", color: .goalOrange)
+                        StatCard(value: "\(allRisks.filter { $0.scoreValue >= 0.15 && $0.scoreValue < 0.3 }.count)", label: "Średnie", color: .warningAmber)
+                        StatCard(value: "\(allRisks.filter { $0.scoreValue < 0.15 }.count)", label: "Niskie", color: .successGreen)
+                    }
 
-                        // Legend
-                        HStack(spacing: 16) {
-                            legendItem("Niskie", Color(hex: "22C55E"))
-                            legendItem("Średnie", Color(hex: "EAB308"))
-                            legendItem("Wysokie", Color(hex: "F97316"))
-                            legendItem("Krytyczne", Color(hex: "EF4444"))
-                        }
-                        .frame(maxWidth: .infinity)
+                    // Matrix
+                    ScrollView(.horizontal, showsIndicators: false) { matrixGrid }
 
-                        // Stats
-                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                            StatCard(value: "\(allRisks.filter { $0.scoreValue >= 0.5 }.count)", label: "Krytyczne", color: Color(hex: "EF4444"))
-                            StatCard(value: "\(allRisks.filter { $0.scoreValue >= 0.3 && $0.scoreValue < 0.5 }.count)", label: "Wysokie", color: Color(hex: "F97316"))
-                            StatCard(value: "\(allRisks.filter { $0.scoreValue >= 0.15 && $0.scoreValue < 0.3 }.count)", label: "Średnie", color: Color(hex: "EAB308"))
-                            StatCard(value: "\(allRisks.filter { $0.scoreValue < 0.15 }.count)", label: "Niskie", color: Color(hex: "22C55E"))
-                        }
+                    // Legend
+                    HStack(spacing: 14) {
+                        legendDot("Niskie", .successGreen)
+                        legendDot("Średnie", .warningAmber)
+                        legendDot("Wysokie", .goalOrange)
+                        legendDot("Krytyczne", .dangerRed)
+                    }
+                    .frame(maxWidth: .infinity)
 
-                        // Risk List
-                        SectionHeader(title: "Lista Ryzyk")
+                    // Risk list
+                    SectionHeader(title: "Lista Ryzyk")
 
-                        if allRisks.isEmpty {
-                            EmptyStateView(icon: "shield.fill", title: "Brak ryzyk")
-                        }
+                    if allRisks.isEmpty {
+                        EmptyStateView(title: "Brak ryzyk")
+                    }
 
-                        ForEach(allRisks.sorted { $0.scoreValue > $1.scoreValue }) { r in
-                            VStack(alignment: .leading, spacing: 8) {
-                                HStack {
-                                    Text(r.title).font(.system(size: 15, weight: .bold))
-                                    Spacer()
-                                    BadgeView(text: "\(Int(r.scoreValue * 100))%", color: riskColor(r.scoreValue))
-                                }
-                                if let gt = r.goal_title { Text(gt).font(.caption).foregroundColor(.text3) }
-                                if let d = r.description, !d.isEmpty { Text(d).font(.caption).foregroundColor(.text2) }
-                                HStack(spacing: 6) {
-                                    BadgeView(text: "P: \(Risk.probLabels[r.probability ?? ""] ?? "")", color: .text2)
-                                    BadgeView(text: "I: \(Risk.impactLabels[r.impact ?? ""] ?? "")", color: .text2)
-                                }
-                                if let m = r.mitigation_plan, !m.isEmpty {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("Plan mitygacji").font(.system(size: 11, weight: .bold)).foregroundColor(.text2)
-                                        Text(m).font(.caption)
-                                    }
-                                    .padding(10).background(Color.surfaceHL).cornerRadius(8)
-                                }
+                    ForEach(allRisks.sorted { $0.scoreValue > $1.scoreValue }) { r in
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text(r.title).font(.system(size: 14, weight: .bold)).foregroundColor(.panelText)
+                                Spacer()
+                                BadgeView(text: "\(Int(r.scoreValue * 100))%", color: riskColor(r.scoreValue))
                             }
-                            .cardStyle()
-                            .overlay(alignment: .leading) {
-                                Rectangle().fill(riskColor(r.scoreValue)).frame(width: 4).cornerRadius(2)
+                            if let gt = r.goal_title {
+                                Text(gt).font(.system(size: 11)).foregroundColor(.panelText3)
+                            }
+                            if let d = r.description, !d.isEmpty {
+                                Text(d).font(.system(size: 12)).foregroundColor(.panelText2)
+                            }
+                            HStack(spacing: 6) {
+                                BadgeView(text: "P: \(Risk.probLabels[r.probability ?? ""] ?? "")", color: .panelText2, bgColor: .panelCard)
+                                BadgeView(text: "I: \(Risk.impactLabels[r.impact ?? ""] ?? "")", color: .panelText2, bgColor: .panelCard)
+                            }
+                            if let m = r.mitigation_plan, !m.isEmpty {
+                                Text(m)
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.panelText2)
+                                    .padding(10)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .background(Color.panelCard)
+                                    .cornerRadius(8)
                             }
                         }
+                        .whiteCard(borderColor: riskColor(r.scoreValue).opacity(0.3))
                     }
                 }
-                .padding()
             }
-            .background(Color.bg)
-            .navigationTitle("Ryzyka")
-            .task { await loadAllRisks() }
-            .refreshable { await loadAllRisks() }
+            .padding(24)
         }
+        .background(Color.panelBg)
+        .task { await loadAllRisks() }
     }
 
-    // MARK: - Matrix Grid
     var matrixGrid: some View {
         VStack(spacing: 3) {
-            // Header
             HStack(spacing: 3) {
-                Text("").frame(width: 60)
+                Text("").frame(width: 56)
                 ForEach(impacts, id: \.self) { i in
                     Text(Risk.impactLabels[i] ?? "")
-                        .font(.system(size: 9)).foregroundColor(.text3)
-                        .frame(width: 56).multilineTextAlignment(.center)
+                        .font(.system(size: 9)).foregroundColor(.panelText3)
+                        .frame(width: 52).multilineTextAlignment(.center)
                 }
             }
 
             ForEach(probs, id: \.self) { p in
                 HStack(spacing: 3) {
                     Text(Risk.probLabels[p] ?? "")
-                        .font(.system(size: 10)).foregroundColor(.text2)
-                        .frame(width: 60, alignment: .trailing)
-
+                        .font(.system(size: 9)).foregroundColor(.panelText2)
+                        .frame(width: 56, alignment: .trailing)
                     ForEach(impacts, id: \.self) { i in
                         let score = (probValues[p] ?? 0.5) * (impactValues[i] ?? 0.5)
                         let count = allRisks.filter { $0.probability == p && $0.impact == i }.count
@@ -113,13 +107,14 @@ struct RisksView: View {
 
                         ZStack {
                             RoundedRectangle(cornerRadius: 8)
-                                .fill(bg.opacity(0.2))
-                                .frame(width: 56, height: 56)
+                                .fill(bg.opacity(0.1))
+                                .frame(width: 52, height: 52)
+                                .overlay(RoundedRectangle(cornerRadius: 8).stroke(bg.opacity(0.2), lineWidth: 1))
                             if count > 0 {
                                 Text("\(count)")
-                                    .font(.system(size: 12, weight: .bold))
+                                    .font(.system(size: 11, weight: .bold))
                                     .foregroundColor(.white)
-                                    .frame(width: 26, height: 26)
+                                    .frame(width: 24, height: 24)
                                     .background(bg)
                                     .clipShape(Circle())
                             }
@@ -130,10 +125,10 @@ struct RisksView: View {
         }
     }
 
-    func legendItem(_ label: String, _ color: Color) -> some View {
-        HStack(spacing: 6) {
-            RoundedRectangle(cornerRadius: 3).fill(color).frame(width: 12, height: 12)
-            Text(label).font(.caption).foregroundColor(.text2)
+    func legendDot(_ label: String, _ color: Color) -> some View {
+        HStack(spacing: 5) {
+            Circle().fill(color).frame(width: 8, height: 8)
+            Text(label).font(.system(size: 11)).foregroundColor(.panelText2)
         }
     }
 

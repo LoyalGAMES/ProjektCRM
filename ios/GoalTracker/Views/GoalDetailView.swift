@@ -13,34 +13,47 @@ struct GoalDetailView: View {
     @State private var showDeleteConfirm = false
 
     var goal: Goal? { store.currentGoal }
+    let tabs = ["Przegląd", "SMART", "Kamienie", "Zadania", "Ryzyka", "Postęp"]
 
     var body: some View {
-        ScrollView {
+        ScrollView(showsIndicators: false) {
             if let g = goal {
-                VStack(spacing: 16) {
-                    heroCard(g)
-                    tabPicker
+                VStack(spacing: 0) {
+                    heroSection(g)
+                    Divider().padding(.horizontal, 24)
+                    PanelTabPicker(selected: $selectedTab, labels: tabs)
+                        .padding(.horizontal, 24)
+                        .padding(.top, 12)
                     tabContent(g)
+                        .padding(.horizontal, 24)
+                        .padding(.top, 8)
+                        .padding(.bottom, 32)
                 }
-                .padding()
             } else {
-                ProgressView().padding(60)
+                ProgressView()
+                    .tint(.accent)
+                    .frame(maxWidth: .infinity)
+                    .padding(80)
             }
         }
-        .background(Color.bg)
-        .navigationBarTitleDisplayMode(.inline)
+        .background(Color.panelBg)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Menu {
                     Button("Edytuj") { showEditForm = true }
                     Divider()
                     Button("Usuń", role: .destructive) { showDeleteConfirm = true }
-                } label: { Image(systemName: "ellipsis.circle") }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.panelText2)
+                        .frame(width: 36, height: 36)
+                        .background(Color.panelCard)
+                        .clipShape(Circle())
+                }
             }
         }
-        .sheet(isPresented: $showEditForm) {
-            if let g = goal { GoalFormView(editGoal: g) }
-        }
+        .sheet(isPresented: $showEditForm) { if let g = goal { GoalFormView(editGoal: g) } }
         .sheet(isPresented: $showAddMilestone) { AddMilestoneSheet(goalId: goalId) }
         .sheet(isPresented: $showAddTask) { AddTaskSheet(goalId: goalId) }
         .sheet(isPresented: $showAddRisk) { AddRiskSheet(goalId: goalId) }
@@ -53,71 +66,96 @@ struct GoalDetailView: View {
     }
 
     // MARK: - Hero
-    func heroCard(_ g: Goal) -> some View {
+    func heroSection(_ g: Goal) -> some View {
         let cd = Countdown.from(g.target_date)
-        return VStack(spacing: 12) {
-            HStack(alignment: .top) {
-                CategoryIcon(category: g.categoryEnum, size: 44)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(g.title).font(.system(size: 22, weight: .heavy))
-                    Text(g.categoryEnum.label).font(.caption).foregroundColor(.text2)
+        return VStack(spacing: 16) {
+            HStack(alignment: .top, spacing: 16) {
+                GoalAvatar(goal: g, size: 56)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(g.title)
+                        .font(.system(size: 22, weight: .heavy, design: .rounded))
+                        .foregroundColor(.panelText)
+                    Text(g.categoryEnum.label)
+                        .font(.system(size: 13))
+                        .foregroundColor(.panelText2)
                 }
+
                 Spacer()
-                BadgeView(text: g.statusEnum.label, color: g.statusEnum.color)
+
+                BadgeView(text: g.statusEnum.label, color: g.statusEnum.color, bgColor: g.statusEnum.bgColor)
             }
 
             if let desc = g.description, !desc.isEmpty {
-                Text(desc).font(.subheadline).foregroundColor(.text2).frame(maxWidth: .infinity, alignment: .leading)
+                Text(desc)
+                    .font(.system(size: 14))
+                    .foregroundColor(.panelText2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .lineSpacing(3)
             }
 
-            Text(cd.text)
-                .font(.system(size: 36, weight: .black, design: .rounded))
-                .foregroundColor(cd.overdue ? .danger : .primary)
-            Text("do terminu (\(formatDate(g.target_date)))")
-                .font(.caption).foregroundColor(.text3)
+            // Countdown
+            HStack(spacing: 16) {
+                VStack(spacing: 4) {
+                    Text(cd.text)
+                        .font(.system(size: 32, weight: .black, design: .rounded))
+                        .foregroundColor(cd.overdue ? .dangerRed : .accent)
+                    Text("do terminu")
+                        .font(.system(size: 11))
+                        .foregroundColor(.panelText3)
+                }
 
-            HStack(spacing: 12) {
-                ProgressBar(value: g.progressValue, color: g.statusEnum.color, height: 10)
-                Text("\(Int(g.progressValue))%")
-                    .font(.system(size: 18, weight: .heavy))
+                Spacer()
+
+                VStack(spacing: 4) {
+                    ProgressRing(value: g.progressValue, color: goalColor(for: g), size: 56)
+                    Text("postęp")
+                        .font(.system(size: 11))
+                        .foregroundColor(.panelText3)
+                }
+
+                Spacer()
+
+                VStack(spacing: 4) {
+                    Text(formatDate(g.target_date))
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.panelText)
+                    Text("termin")
+                        .font(.system(size: 11))
+                        .foregroundColor(.panelText3)
+                }
             }
+            .padding(16)
+            .background(Color.panelCard)
+            .cornerRadius(16)
 
             // Quick actions
             HStack(spacing: 8) {
                 if g.status == "draft" {
-                    actionBtn("Aktywuj", .primary) { await store.updateGoal(g.id, data: ["status": "active"]) }
+                    actionBtn("Aktywuj", .infoBlue) { await store.updateGoal(g.id, data: ["status": "active"]) }
                 }
                 if g.status == "active" {
-                    actionBtn("Wstrzymaj", .warning) { await store.updateGoal(g.id, data: ["status": "paused"]) }
-                    actionBtn("Ukończ", .success) { await store.updateGoal(g.id, data: ["status": "completed", "progress": 100]) }
+                    actionBtn("Wstrzymaj", .warningAmber) { await store.updateGoal(g.id, data: ["status": "paused"]) }
+                    actionBtn("Ukończ", .successGreen) { await store.updateGoal(g.id, data: ["status": "completed", "progress": 100]) }
                 }
                 if g.status == "paused" {
-                    actionBtn("Wznów", .primary) { await store.updateGoal(g.id, data: ["status": "active"]) }
+                    actionBtn("Wznów", .infoBlue) { await store.updateGoal(g.id, data: ["status": "active"]) }
                 }
             }
         }
-        .cardStyle()
-        .overlay(alignment: .leading) {
-            Rectangle().fill(Color(hex: g.color ?? "4A90D9")).frame(width: 5).cornerRadius(3)
-        }
+        .padding(24)
     }
 
     func actionBtn(_ label: String, _ color: Color, action: @escaping () async -> Void) -> some View {
         Button { Task { await action() } } label: {
-            Text(label).font(.system(size: 13, weight: .bold))
-                .foregroundColor(.white).padding(.horizontal, 16).padding(.vertical, 10)
-                .background(color).cornerRadius(10)
-        }
-    }
-
-    // MARK: - Tab Picker
-    var tabPicker: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 4) {
-                ForEach(Array(["Przegląd", "SMART", "Kamienie", "Zadania", "Ryzyka", "Postęp"].enumerated()), id: \.offset) { i, label in
-                    SortChip(label: label, isActive: selectedTab == i) { selectedTab = i }
-                }
-            }
+            Text(label)
+                .font(.system(size: 13, weight: .bold))
+                .foregroundColor(color)
+                .padding(.horizontal, 18)
+                .padding(.vertical, 10)
+                .background(color.opacity(0.1))
+                .cornerRadius(10)
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(color.opacity(0.3), lineWidth: 1))
         }
     }
 
@@ -142,11 +180,11 @@ struct GoalDetailView: View {
         let highR = (g.risks ?? []).filter { $0.scoreValue >= 0.6 }.count
         let ss = g.smartScore
 
-        return LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-            StatCard(value: "\(Int(ss * 100))%", label: "SMART Score", color: ss >= 0.8 ? .success : ss >= 0.6 ? .warning : .danger)
-            StatCard(value: "\(mDone)/\((g.milestones ?? []).count)", label: "Kamienie milowe", color: .primary)
-            StatCard(value: "\(tDone)/\((g.tasks ?? []).count)", label: "Zadania", color: .secondary)
-            StatCard(value: "\(highR)", label: "Wysokie ryzyka", color: highR > 0 ? .danger : .success)
+        return LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+            StatCard(value: "\(Int(ss * 100))%", label: "SMART Score", color: ss >= 0.8 ? .successGreen : ss >= 0.6 ? .warningAmber : .dangerRed)
+            StatCard(value: "\(mDone)/\((g.milestones ?? []).count)", label: "Kamienie milowe", color: .infoBlue)
+            StatCard(value: "\(tDone)/\((g.tasks ?? []).count)", label: "Zadania", color: .goalPurple)
+            StatCard(value: "\(highR)", label: "Wysokie ryzyka", color: highR > 0 ? .dangerRed : .successGreen)
         }
     }
 
@@ -162,79 +200,88 @@ struct GoalDetailView: View {
         ]
 
         return VStack(spacing: 12) {
-            VStack(spacing: 8) {
-                Text("Jakość celu SMART").font(.subheadline).foregroundColor(.text2)
-                ProgressBar(value: ss * 100, color: ss >= 0.8 ? .success : ss >= 0.6 ? .warning : .danger, height: 10)
-                Text("\(Int(ss * 100))%").font(.system(size: 28, weight: .black, design: .rounded))
-                HStack(spacing: 8) {
+            // Score card
+            VStack(spacing: 10) {
+                Text("Jakość celu SMART")
+                    .font(.system(size: 13))
+                    .foregroundColor(.panelText2)
+                ProgressBar(value: ss * 100, color: ss >= 0.8 ? .successGreen : ss >= 0.6 ? .warningAmber : .dangerRed, height: 8)
+                Text("\(Int(ss * 100))%")
+                    .font(.system(size: 28, weight: .black, design: .rounded))
+                    .foregroundColor(.panelText)
+                HStack(spacing: 6) {
                     ForEach(Array("SMART".enumerated()), id: \.offset) { i, ch in
                         Text(String(ch))
-                            .font(.system(size: 16, weight: .heavy))
-                            .frame(width: 36, height: 36)
-                            .background(Double(i) < ss * 5 ? Color.primary : Color.surfaceHL)
-                            .foregroundColor(Double(i) < ss * 5 ? .white : .text3)
-                            .cornerRadius(10)
+                            .font(.system(size: 14, weight: .heavy))
+                            .frame(width: 32, height: 32)
+                            .background(Double(i) < ss * 5 ? Color.accent : Color.panelCard)
+                            .foregroundColor(Double(i) < ss * 5 ? .white : .panelText3)
+                            .cornerRadius(8)
                     }
                 }
             }
-            .cardStyle()
+            .whiteCard()
 
             ForEach(fields, id: \.0) { letter, title, pl, value in
                 let filled = (value ?? "").trimmingCharacters(in: .whitespaces).count > 10
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 12) {
-                        Text(letter)
-                            .font(.system(size: 18, weight: .black))
-                            .frame(width: 36, height: 36)
-                            .background(filled ? Color.primary : Color.surfaceHL)
-                            .foregroundColor(.white)
-                            .cornerRadius(10)
-                        VStack(alignment: .leading) {
-                            Text(title).font(.system(size: 15, weight: .bold))
-                            Text(pl).font(.caption).foregroundColor(.text2)
+                HStack(alignment: .top, spacing: 14) {
+                    Text(letter)
+                        .font(.system(size: 16, weight: .black))
+                        .frame(width: 32, height: 32)
+                        .background(filled ? Color.accent : Color.panelCard)
+                        .foregroundColor(filled ? .white : .panelText3)
+                        .cornerRadius(8)
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 6) {
+                            Text(title).font(.system(size: 14, weight: .bold)).foregroundColor(.panelText)
+                            Text("· \(pl)").font(.system(size: 12)).foregroundColor(.panelText3)
                         }
+                        Text(value ?? "Nie zdefiniowano")
+                            .font(.system(size: 13))
+                            .foregroundColor(filled ? .panelText : .panelText3)
+                            .lineSpacing(3)
                     }
-                    Text(value ?? "Nie zdefiniowano")
-                        .font(.subheadline)
-                        .foregroundColor(filled ? .white : .text3)
                 }
-                .cardStyle(borderColor: filled ? Color.primary.opacity(0.3) : nil)
+                .whiteCard(borderColor: filled ? Color.accent.opacity(0.3) : .panelBorder)
             }
         }
     }
 
     // MARK: - Milestones
     func milestonesTab(_ g: Goal) -> some View {
-        VStack(spacing: 8) {
-            Button { showAddMilestone = true } label: {
-                Label("Dodaj kamień milowy", systemImage: "plus.circle.fill")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(.primary)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.bottom, 4)
+        VStack(spacing: 6) {
+            AddButton(label: "Dodaj kamień milowy") { showAddMilestone = true }
 
             ForEach(g.milestones ?? []) { m in
-                HStack(spacing: 12) {
-                    Button { Task { await store.toggleMilestone(m) } } label: {
-                        Image(systemName: m.isDone ? "checkmark.circle.fill" : "circle")
-                            .font(.title2)
-                            .foregroundColor(m.isDone ? .success : .text3)
+                Button { Task { await store.toggleMilestone(m) } } label: {
+                    HStack(spacing: 12) {
+                        CircleCheck(checked: m.isDone, color: .successGreen)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(m.title)
+                                .font(.system(size: 14, weight: .medium))
+                                .strikethrough(m.isDone)
+                                .foregroundColor(m.isDone ? .panelText3 : .panelText)
+                            if let d = m.target_date {
+                                Text(formatDate(d))
+                                    .font(.system(size: 11))
+                                    .foregroundColor(.panelText3)
+                            }
+                        }
+                        Spacer()
+                        if m.isDone {
+                            BadgeView(text: "Gotowe", color: .successGreen, bgColor: .successBg)
+                        }
                     }
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(m.title)
-                            .font(.system(size: 15, weight: .semibold))
-                            .strikethrough(m.isDone)
-                            .foregroundColor(m.isDone ? .text3 : .white)
-                        if let d = m.target_date { Text(formatDate(d)).font(.caption).foregroundColor(.text2) }
-                    }
-                    Spacer()
+                    .padding(14)
+                    .background(Color.white)
+                    .cornerRadius(12)
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.panelBorder, lineWidth: 1))
                 }
-                .cardStyle()
+                .buttonStyle(.plain)
             }
 
             if (g.milestones ?? []).isEmpty {
-                EmptyStateView(icon: "flag", title: "Brak kamieni milowych")
+                EmptyStateView(title: "Brak kamieni milowych")
             }
         }
     }
@@ -248,120 +295,142 @@ struct GoalDetailView: View {
             ("done", "Gotowe", tasks.filter { $0.status == "done" }),
         ]
 
-        return VStack(spacing: 8) {
-            Button { showAddTask = true } label: {
-                Label("Dodaj zadanie", systemImage: "plus.circle.fill")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(.primary)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.bottom, 4)
+        return VStack(spacing: 6) {
+            AddButton(label: "Dodaj zadanie") { showAddTask = true }
 
-            ForEach(groups, id: \.0) { _, label, items in
-                Text("\(label) (\(items.count))").font(.system(size: 14, weight: .bold)).foregroundColor(.text2)
-                    .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 4)
-
-                ForEach(items) { t in
-                    Button { Task { await store.cycleTaskStatus(t) } } label: {
-                        HStack(spacing: 12) {
-                            RoundedRectangle(cornerRadius: 2).fill(statusColor(t.status)).frame(width: 4, height: 30)
-                            Text(t.title)
-                                .font(.system(size: 14))
-                                .strikethrough(t.isDone)
-                                .foregroundColor(t.isDone ? .text3 : .white)
-                            Spacer()
-                            PriorityBadge(priority: t.priorityEnum)
-                        }
-                        .cardStyle()
+            ForEach(groups, id: \.0) { status, label, items in
+                if !items.isEmpty {
+                    HStack(spacing: 6) {
+                        Circle().fill(taskStatusColor(status)).frame(width: 8, height: 8)
+                        Text(label)
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.panelText2)
+                        Text("\(items.count)")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(.panelText3)
+                        Spacer()
                     }
-                    .buttonStyle(.plain)
+                    .padding(.top, 8)
+
+                    ForEach(items) { t in
+                        Button { Task { await store.cycleTaskStatus(t) } } label: {
+                            HStack(spacing: 12) {
+                                CircleCheck(checked: t.isDone, color: .accent)
+                                Text(t.title)
+                                    .font(.system(size: 14, weight: .medium))
+                                    .strikethrough(t.isDone)
+                                    .foregroundColor(t.isDone ? .panelText3 : .panelText)
+                                Spacer()
+                                PriorityBadge(priority: t.priorityEnum)
+                            }
+                            .padding(14)
+                            .background(Color.white)
+                            .cornerRadius(12)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.panelBorder, lineWidth: 1)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
+            }
+
+            if tasks.isEmpty {
+                EmptyStateView(title: "Brak zadań", subtitle: "Dodaj pierwsze zadanie")
             }
         }
     }
 
-    func statusColor(_ status: String?) -> Color {
-        switch status {
-        case "in_progress": .primary; case "done": .success; default: .text3
+    func taskStatusColor(_ s: String) -> Color {
+        switch s {
+        case "in_progress": .infoBlue; case "done": .successGreen; default: .panelText3
         }
     }
 
     // MARK: - Risks
     func risksTab(_ g: Goal) -> some View {
-        VStack(spacing: 8) {
-            Button { showAddRisk = true } label: {
-                Label("Dodaj ryzyko", systemImage: "plus.circle.fill")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(.primary)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.bottom, 4)
+        VStack(spacing: 6) {
+            AddButton(label: "Dodaj ryzyko") { showAddRisk = true }
 
             ForEach((g.risks ?? []).sorted { $0.scoreValue > $1.scoreValue }) { r in
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text(r.title).font(.system(size: 15, weight: .bold))
+                        Text(r.title)
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.panelText)
                         Spacer()
                         BadgeView(text: "\(Int(r.scoreValue * 100))%", color: riskColor(r.scoreValue))
                     }
-                    if let d = r.description, !d.isEmpty { Text(d).font(.caption).foregroundColor(.text2) }
+                    if let d = r.description, !d.isEmpty {
+                        Text(d).font(.system(size: 12)).foregroundColor(.panelText2)
+                    }
                     HStack(spacing: 6) {
-                        BadgeView(text: "P: \(Risk.probLabels[r.probability ?? ""] ?? "")", color: .text2)
-                        BadgeView(text: "I: \(Risk.impactLabels[r.impact ?? ""] ?? "")", color: .text2)
+                        BadgeView(text: "P: \(Risk.probLabels[r.probability ?? ""] ?? "")", color: .panelText2, bgColor: .panelCard)
+                        BadgeView(text: "I: \(Risk.impactLabels[r.impact ?? ""] ?? "")", color: .panelText2, bgColor: .panelCard)
                     }
                     if let m = r.mitigation_plan, !m.isEmpty {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Plan mitygacji").font(.system(size: 11, weight: .bold)).foregroundColor(.text2)
-                            Text(m).font(.caption).foregroundColor(.white)
-                        }
-                        .padding(10).background(Color.surfaceHL).cornerRadius(8)
+                        Text(m)
+                            .font(.system(size: 12))
+                            .foregroundColor(.panelText2)
+                            .padding(10)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color.panelCard)
+                            .cornerRadius(8)
                     }
                 }
-                .cardStyle()
-                .overlay(alignment: .leading) {
-                    Rectangle().fill(riskColor(r.scoreValue)).frame(width: 4).cornerRadius(2)
-                }
+                .whiteCard(borderColor: riskColor(r.scoreValue).opacity(0.3))
             }
 
             if (g.risks ?? []).isEmpty {
-                EmptyStateView(icon: "shield", title: "Brak ryzyk")
+                EmptyStateView(title: "Brak ryzyk")
             }
         }
     }
 
     // MARK: - Progress
     func progressTab(_ g: Goal) -> some View {
-        VStack(spacing: 8) {
-            Button { showAddProgress = true } label: {
-                Label("Dodaj wpis postępu", systemImage: "plus.circle.fill")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(.primary)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.bottom, 4)
+        VStack(spacing: 6) {
+            AddButton(label: "Dodaj wpis") { showAddProgress = true }
 
             ForEach(g.progressLogs ?? []) { l in
                 VStack(alignment: .leading, spacing: 6) {
                     HStack {
-                        Text(formatDate(l.date)).font(.system(size: 13, weight: .semibold)).foregroundColor(.text2)
+                        Text(formatDate(l.date))
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.panelText2)
                         Spacer()
-                        Text("\(Int(l.progress_value ?? 0))%").font(.system(size: 15, weight: .bold)).foregroundColor(.primary)
+                        Text("\(Int(l.progress_value ?? 0))%")
+                            .font(.system(size: 15, weight: .bold, design: .rounded))
+                            .foregroundColor(.accent)
                     }
-                    if let n = l.notes, !n.isEmpty { Text(n).font(.subheadline) }
-                    if let a = l.achievements, !a.isEmpty { Label(a, systemImage: "star.fill").font(.caption).foregroundColor(.success) }
-                    if let o = l.obstacles, !o.isEmpty { Label(o, systemImage: "exclamationmark.triangle.fill").font(.caption).foregroundColor(.warning) }
+                    if let n = l.notes, !n.isEmpty {
+                        Text(n).font(.system(size: 13)).foregroundColor(.panelText).lineSpacing(3)
+                    }
+                    if let a = l.achievements, !a.isEmpty {
+                        HStack(spacing: 4) {
+                            Circle().fill(Color.successGreen).frame(width: 6, height: 6)
+                            Text(a).font(.system(size: 12)).foregroundColor(.successGreen)
+                        }
+                    }
+                    if let o = l.obstacles, !o.isEmpty {
+                        HStack(spacing: 4) {
+                            Circle().fill(Color.warningAmber).frame(width: 6, height: 6)
+                            Text(o).font(.system(size: 12)).foregroundColor(.warningAmber)
+                        }
+                    }
                 }
-                .cardStyle()
+                .whiteCard()
             }
 
             if (g.progressLogs ?? []).isEmpty {
-                EmptyStateView(icon: "chart.line.uptrend.xyaxis", title: "Brak wpisów")
+                EmptyStateView(title: "Brak wpisów postępu")
             }
         }
     }
 }
 
-// MARK: - Add Sheets
+// MARK: - Sheets
 struct AddMilestoneSheet: View {
     @EnvironmentObject var store: GoalStore
     @Environment(\.dismiss) var dismiss
@@ -372,12 +441,15 @@ struct AddMilestoneSheet: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                TextField("Nazwa", text: $title)
-                Toggle("Termin", isOn: $hasDate)
-                if hasDate { DatePicker("Data", selection: $date, displayedComponents: .date) }
+            VStack(spacing: 20) {
+                formField("Nazwa kamienia milowego", text: $title, placeholder: "np. Zakończyć moduł 1")
+                Toggle("Dodaj termin", isOn: $hasDate).tint(.accent)
+                if hasDate { DatePicker("Data", selection: $date, displayedComponents: .date).tint(.accent) }
+                Spacer()
             }
+            .padding(24)
             .navigationTitle("Nowy kamień milowy")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Anuluj") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
@@ -385,6 +457,8 @@ struct AddMilestoneSheet: View {
                         let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
                         Task { await store.createMilestone(goalId: goalId, title: title, date: hasDate ? df.string(from: date) : nil); dismiss() }
                     }
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(.accent)
                     .disabled(title.isEmpty)
                 }
             }
@@ -404,15 +478,19 @@ struct AddTaskSheet: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                TextField("Nazwa", text: $title)
+            VStack(spacing: 20) {
+                formField("Nazwa zadania", text: $title, placeholder: "np. Przeczytać rozdział 1")
                 Picker("Priorytet", selection: $priority) {
                     ForEach(GoalPriority.allCases, id: \.self) { p in Text(p.label).tag(p) }
                 }
-                Toggle("Termin", isOn: $hasDate)
-                if hasDate { DatePicker("Data", selection: $date, displayedComponents: .date) }
+                .pickerStyle(.segmented)
+                Toggle("Dodaj termin", isOn: $hasDate).tint(.accent)
+                if hasDate { DatePicker("Data", selection: $date, displayedComponents: .date).tint(.accent) }
+                Spacer()
             }
+            .padding(24)
             .navigationTitle("Nowe zadanie")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Anuluj") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
@@ -420,6 +498,8 @@ struct AddTaskSheet: View {
                         let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
                         Task { await store.createTask(goalId: goalId, title: title, priority: priority.rawValue, dueDate: hasDate ? df.string(from: date) : nil); dismiss() }
                     }
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(.accent)
                     .disabled(title.isEmpty)
                 }
             }
@@ -438,29 +518,36 @@ struct AddRiskSheet: View {
     @State private var impact = "moderate"
     @State private var mitigation = ""
 
-    let probs = ["very_low", "low", "medium", "high", "very_high"]
-    let impacts = ["negligible", "minor", "moderate", "major", "critical"]
-
     var body: some View {
         NavigationStack {
-            Form {
-                TextField("Nazwa", text: $title)
-                TextField("Opis", text: $desc, axis: .vertical).lineLimit(3)
-                Picker("Prawdopodobieństwo", selection: $prob) {
-                    ForEach(probs, id: \.self) { Text(Risk.probLabels[$0] ?? $0).tag($0) }
+            ScrollView {
+                VStack(spacing: 16) {
+                    formField("Nazwa ryzyka", text: $title, placeholder: "np. Brak czasu")
+                    formFieldMulti("Opis", text: $desc, placeholder: "Szczegóły ryzyka...")
+                    Picker("Prawdopodobieństwo", selection: $prob) {
+                        ForEach(["very_low", "low", "medium", "high", "very_high"], id: \.self) {
+                            Text(Risk.probLabels[$0] ?? $0).tag($0)
+                        }
+                    }
+                    Picker("Wpływ", selection: $impact) {
+                        ForEach(["negligible", "minor", "moderate", "major", "critical"], id: \.self) {
+                            Text(Risk.impactLabels[$0] ?? $0).tag($0)
+                        }
+                    }
+                    formFieldMulti("Plan mitygacji", text: $mitigation, placeholder: "Jak zmniejszyć ryzyko...")
                 }
-                Picker("Wpływ", selection: $impact) {
-                    ForEach(impacts, id: \.self) { Text(Risk.impactLabels[$0] ?? $0).tag($0) }
-                }
-                TextField("Plan mitygacji", text: $mitigation, axis: .vertical).lineLimit(3)
+                .padding(24)
             }
             .navigationTitle("Nowe ryzyko")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Anuluj") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Dodaj") {
                         Task { await store.createRisk(goalId: goalId, data: ["title": title, "description": desc, "probability": prob, "impact": impact, "mitigation_plan": mitigation]); dismiss() }
                     }
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(.accent)
                     .disabled(title.isEmpty)
                 }
             }
@@ -481,28 +568,61 @@ struct AddProgressSheet: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Postęp") {
-                    Slider(value: $value, in: 0...100, step: 5)
-                    Text("\(Int(value))%").font(.title2.bold()).foregroundColor(.primary)
+            ScrollView {
+                VStack(spacing: 20) {
+                    VStack(spacing: 8) {
+                        Text("\(Int(value))%")
+                            .font(.system(size: 36, weight: .black, design: .rounded))
+                            .foregroundColor(.accent)
+                        Slider(value: $value, in: 0...100, step: 5)
+                            .tint(.accent)
+                    }
+                    formFieldMulti("Notatki", text: $notes, placeholder: "Co się wydarzyło?")
+                    formFieldMulti("Osiągnięcia", text: $achievements, placeholder: "Co udało się zrobić?")
+                    formFieldMulti("Przeszkody", text: $obstacles, placeholder: "Co stanowiło problem?")
                 }
-                Section("Notatki") {
-                    TextField("Co się wydarzyło?", text: $notes, axis: .vertical).lineLimit(3)
-                    TextField("Osiągnięcia", text: $achievements, axis: .vertical).lineLimit(2)
-                    TextField("Przeszkody", text: $obstacles, axis: .vertical).lineLimit(2)
-                }
+                .padding(24)
             }
             .navigationTitle("Wpis postępu")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Anuluj") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Zapisz") {
                         Task { await store.addProgress(goalId: goalId, value: value, notes: notes, achievements: achievements, obstacles: obstacles); dismiss() }
                     }
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(.accent)
                 }
             }
             .onAppear { value = current }
         }
         .presentationDetents([.medium])
+    }
+}
+
+// MARK: - Form helpers
+func formField(_ label: String, text: Binding<String>, placeholder: String) -> some View {
+    VStack(alignment: .leading, spacing: 6) {
+        Text(label).font(.system(size: 12, weight: .semibold)).foregroundColor(.panelText2)
+        TextField(placeholder, text: text)
+            .font(.system(size: 15))
+            .padding(14)
+            .background(Color.panelCard)
+            .cornerRadius(12)
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.panelBorder))
+    }
+}
+
+func formFieldMulti(_ label: String, text: Binding<String>, placeholder: String) -> some View {
+    VStack(alignment: .leading, spacing: 6) {
+        Text(label).font(.system(size: 12, weight: .semibold)).foregroundColor(.panelText2)
+        TextField(placeholder, text: text, axis: .vertical)
+            .lineLimit(3...6)
+            .font(.system(size: 15))
+            .padding(14)
+            .background(Color.panelCard)
+            .cornerRadius(12)
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.panelBorder))
     }
 }

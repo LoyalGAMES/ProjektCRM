@@ -5,7 +5,7 @@ import SwiftUI
 struct GoalTimelineProvider: TimelineProvider {
     func placeholder(in context: Context) -> GoalEntry {
         GoalEntry(date: Date(), goals: [
-            WidgetGoal(id: "1", title: "Przykładowy cel", category: "personal", priority: "high", status: "active", progress: 65, target_date: "2026-06-15", color: "#4A90D9")
+            WidgetGoal(id: "1", title: "Przykładowy cel", category: "personal", priority: "high", status: "active", progress: 65, target_date: "2026-06-15", color: "#FF6B9D")
         ])
     }
 
@@ -26,13 +26,12 @@ struct GoalTimelineProvider: TimelineProvider {
     }
 }
 
-// MARK: - Entry
 struct GoalEntry: TimelineEntry {
     let date: Date
     let goals: [WidgetGoal]
 }
 
-// MARK: - Small Widget View (single goal countdown)
+// MARK: - Small
 struct SmallWidgetView: View {
     let entry: GoalEntry
 
@@ -40,180 +39,174 @@ struct SmallWidgetView: View {
         if let goal = entry.goals.first {
             let cd = goal.countdown
             VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    Image(systemName: goal.categoryIcon)
-                        .font(.system(size: 14))
-                        .foregroundColor(Color(hex: goal.color ?? "4A90D9"))
-                    Spacer()
-                    Circle().fill(priorityColor(goal.priority)).frame(width: 8, height: 8)
+                // Avatar
+                ZStack {
+                    Circle()
+                        .fill(LinearGradient(colors: categoryGradient(goal.category), startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .frame(width: 30, height: 30)
+                    Text(initials(goal.title))
+                        .font(.system(size: 10, weight: .black, design: .rounded))
+                        .foregroundColor(.white)
                 }
 
                 Text(goal.title)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(size: 12, weight: .semibold))
                     .lineLimit(2)
-                    .foregroundColor(.white)
+                    .foregroundColor(Color(hex: "1A1D2E"))
 
                 Spacer()
 
                 Text(cd.text)
-                    .font(.system(size: 22, weight: .heavy, design: .rounded))
-                    .foregroundColor(cd.overdue ? Color(hex: "F87171") : Color(hex: "4A90D9"))
+                    .font(.system(size: 20, weight: .heavy, design: .rounded))
+                    .foregroundColor(cd.overdue ? Color(hex: "EF4444") : Color(hex: "FF6B6B"))
 
-                // Progress
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 3).fill(Color.white.opacity(0.1)).frame(height: 6)
-                        RoundedRectangle(cornerRadius: 3).fill(Color(hex: goal.color ?? "4A90D9"))
-                            .frame(width: geo.size.width * goal.progressValue / 100, height: 6)
+                        RoundedRectangle(cornerRadius: 2).fill(Color(hex: "ECEEF5")).frame(height: 4)
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(Color(hex: goal.color ?? "FF6B6B"))
+                            .frame(width: geo.size.width * goal.progressValue / 100, height: 4)
                     }
                 }
-                .frame(height: 6)
+                .frame(height: 4)
 
                 Text("\(Int(goal.progressValue))%")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(.white.opacity(0.6))
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(Color(hex: "6B7085"))
             }
             .padding()
-            .containerBackground(Color(hex: "131829"), for: .widget)
+            .containerBackground(.white, for: .widget)
         } else {
-            VStack {
-                Image(systemName: "target")
-                    .font(.largeTitle)
-                    .foregroundColor(.white.opacity(0.3))
-                Text("Brak celów")
-                    .font(.caption)
-                    .foregroundColor(.white.opacity(0.5))
+            VStack(spacing: 6) {
+                Circle().fill(Color(hex: "FFF0F0")).frame(width: 36, height: 36)
+                    .overlay(Text("GT").font(.system(size: 12, weight: .black)).foregroundColor(Color(hex: "FF6B6B")))
+                Text("Brak celów").font(.caption).foregroundColor(Color(hex: "A0A5BA"))
             }
-            .containerBackground(Color(hex: "131829"), for: .widget)
-        }
-    }
-
-    func priorityColor(_ p: String?) -> Color {
-        switch p {
-        case "critical": Color(hex: "EF4444"); case "high": Color(hex: "F97316")
-        case "medium": Color(hex: "EAB308"); default: Color(hex: "22C55E")
+            .containerBackground(.white, for: .widget)
         }
     }
 }
 
-// MARK: - Medium Widget View (multiple goals)
+// MARK: - Medium
 struct MediumWidgetView: View {
     let entry: GoalEntry
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 14) {
             ForEach(entry.goals.prefix(3)) { goal in
                 let cd = goal.countdown
                 VStack(alignment: .leading, spacing: 4) {
-                    Image(systemName: goal.categoryIcon)
-                        .font(.system(size: 16))
-                        .foregroundColor(Color(hex: goal.color ?? "4A90D9"))
-
+                    ZStack {
+                        Circle()
+                            .fill(LinearGradient(colors: categoryGradient(goal.category), startPoint: .topLeading, endPoint: .bottomTrailing))
+                            .frame(width: 24, height: 24)
+                        Text(initials(goal.title))
+                            .font(.system(size: 8, weight: .black, design: .rounded))
+                            .foregroundColor(.white)
+                    }
                     Text(goal.title)
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: 11, weight: .semibold))
                         .lineLimit(2)
-                        .foregroundColor(.white)
-
+                        .foregroundColor(Color(hex: "1A1D2E"))
                     Spacer()
-
                     Text(cd.text)
-                        .font(.system(size: 16, weight: .heavy, design: .rounded))
-                        .foregroundColor(cd.overdue ? Color(hex: "F87171") : Color(hex: "4A90D9"))
-
+                        .font(.system(size: 14, weight: .heavy, design: .rounded))
+                        .foregroundColor(cd.overdue ? Color(hex: "EF4444") : Color(hex: "FF6B6B"))
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
-                            RoundedRectangle(cornerRadius: 2).fill(Color.white.opacity(0.1)).frame(height: 4)
-                            RoundedRectangle(cornerRadius: 2).fill(Color(hex: goal.color ?? "4A90D9"))
-                                .frame(width: geo.size.width * goal.progressValue / 100, height: 4)
+                            RoundedRectangle(cornerRadius: 2).fill(Color(hex: "ECEEF5")).frame(height: 3)
+                            RoundedRectangle(cornerRadius: 2).fill(Color(hex: goal.color ?? "FF6B6B"))
+                                .frame(width: geo.size.width * goal.progressValue / 100, height: 3)
                         }
                     }
-                    .frame(height: 4)
-
+                    .frame(height: 3)
                     Text("\(Int(goal.progressValue))%")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(.white.opacity(0.5))
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundColor(Color(hex: "A0A5BA"))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .padding()
-        .containerBackground(Color(hex: "131829"), for: .widget)
+        .containerBackground(.white, for: .widget)
     }
 }
 
-// MARK: - Large Widget View (detailed list)
+// MARK: - Large
 struct LargeWidgetView: View {
     let entry: GoalEntry
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Image(systemName: "target")
-                    .foregroundColor(Color(hex: "4A90D9"))
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                ZStack {
+                    Circle().fill(Color(hex: "FFF0F0")).frame(width: 28, height: 28)
+                    Text("GT").font(.system(size: 10, weight: .black, design: .rounded)).foregroundColor(Color(hex: "FF6B6B"))
+                }
                 Text("GoalTracker")
-                    .font(.system(size: 16, weight: .heavy))
-                    .foregroundColor(.white)
+                    .font(.system(size: 15, weight: .heavy, design: .rounded))
+                    .foregroundColor(Color(hex: "1A1D2E"))
                 Spacer()
                 Text("\(entry.goals.count) celów")
-                    .font(.caption)
-                    .foregroundColor(.white.opacity(0.5))
+                    .font(.system(size: 11))
+                    .foregroundColor(Color(hex: "A0A5BA"))
             }
+
+            Divider()
 
             ForEach(entry.goals.prefix(5)) { goal in
                 let cd = goal.countdown
                 HStack(spacing: 10) {
-                    Image(systemName: goal.categoryIcon)
-                        .font(.system(size: 14))
-                        .foregroundColor(Color(hex: goal.color ?? "4A90D9"))
-                        .frame(width: 28, height: 28)
-                        .background(Color(hex: goal.color ?? "4A90D9").opacity(0.15))
-                        .cornerRadius(7)
+                    ZStack {
+                        Circle()
+                            .fill(LinearGradient(colors: categoryGradient(goal.category), startPoint: .topLeading, endPoint: .bottomTrailing))
+                            .frame(width: 28, height: 28)
+                        Text(initials(goal.title))
+                            .font(.system(size: 9, weight: .black, design: .rounded))
+                            .foregroundColor(.white)
+                    }
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(goal.title)
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(.system(size: 12, weight: .semibold))
                             .lineLimit(1)
-                            .foregroundColor(.white)
-
+                            .foregroundColor(Color(hex: "1A1D2E"))
                         GeometryReader { geo in
                             ZStack(alignment: .leading) {
-                                RoundedRectangle(cornerRadius: 2).fill(Color.white.opacity(0.1)).frame(height: 4)
-                                RoundedRectangle(cornerRadius: 2).fill(Color(hex: goal.color ?? "4A90D9"))
-                                    .frame(width: geo.size.width * goal.progressValue / 100, height: 4)
+                                RoundedRectangle(cornerRadius: 2).fill(Color(hex: "ECEEF5")).frame(height: 3)
+                                RoundedRectangle(cornerRadius: 2).fill(Color(hex: goal.color ?? "FF6B6B"))
+                                    .frame(width: geo.size.width * goal.progressValue / 100, height: 3)
                             }
                         }
-                        .frame(height: 4)
+                        .frame(height: 3)
                     }
 
                     VStack(alignment: .trailing, spacing: 2) {
                         Text(cd.text)
-                            .font(.system(size: 12, weight: .bold, design: .rounded))
-                            .foregroundColor(cd.overdue ? Color(hex: "F87171") : Color(hex: "4A90D9"))
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .foregroundColor(cd.overdue ? Color(hex: "EF4444") : Color(hex: "FF6B6B"))
                         Text("\(Int(goal.progressValue))%")
-                            .font(.system(size: 10))
-                            .foregroundColor(.white.opacity(0.5))
+                            .font(.system(size: 9))
+                            .foregroundColor(Color(hex: "A0A5BA"))
                     }
                 }
-                .padding(.vertical, 4)
+                .padding(.vertical, 3)
             }
 
             if entry.goals.isEmpty {
                 Spacer()
-                Text("Brak aktywnych celów")
-                    .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.3))
-                    .frame(maxWidth: .infinity)
+                Text("Brak aktywnych celów").font(.subheadline).foregroundColor(Color(hex: "A0A5BA")).frame(maxWidth: .infinity)
                 Spacer()
             }
         }
         .padding()
-        .containerBackground(Color(hex: "131829"), for: .widget)
+        .containerBackground(.white, for: .widget)
     }
 }
 
-// MARK: - Widget Definition
+// MARK: - Widget
 struct GoalCountdownWidget: Widget {
-    let kind: String = "GoalCountdownWidget"
+    let kind = "GoalCountdownWidget"
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: GoalTimelineProvider()) { entry in
@@ -239,7 +232,26 @@ struct GoalCountdownWidgetEntryView: View {
     }
 }
 
-// Color extension for widget
+// MARK: - Helpers
+func initials(_ title: String) -> String {
+    let w = title.split(separator: " ").prefix(2)
+    if w.count >= 2 { return String(w[0].prefix(1) + w[1].prefix(1)).uppercased() }
+    return String(title.prefix(2)).uppercased()
+}
+
+func categoryGradient(_ cat: String?) -> [Color] {
+    switch cat {
+    case "career": [Color(hex: "A78BFA"), Color(hex: "818CF8")]
+    case "health": [Color(hex: "2DD4BF"), Color(hex: "34D399")]
+    case "finance": [Color(hex: "FB923C"), Color(hex: "F97316")]
+    case "education": [Color(hex: "60A5FA"), Color(hex: "3B82F6")]
+    case "personal": [Color(hex: "FF6B9D"), Color(hex: "FF6B6B")]
+    case "relationships": [Color(hex: "4ADE80"), Color(hex: "22C55E")]
+    default: [Color(hex: "94A3B8"), Color(hex: "64748B")]
+    }
+}
+
+// Color hex init for widget module
 extension Color {
     init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)

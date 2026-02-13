@@ -6,111 +6,116 @@ struct SettingsView: View {
     @State private var isTesting = false
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 16) {
-                    // App Info
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack(spacing: 12) {
-                            Image(systemName: "target")
-                                .font(.system(size: 32))
-                                .foregroundColor(.primary)
-                                .frame(width: 60, height: 60)
-                                .background(Color.primary.opacity(0.15))
-                                .cornerRadius(14)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("GoalTracker SMART")
-                                    .font(.system(size: 20, weight: .heavy))
-                                Text("Wersja 1.0.0 (Native iPadOS)")
-                                    .font(.caption).foregroundColor(.text3)
-                            }
-                        }
-                        Text("Twój osobisty asystent w planowaniu i realizacji celów zgodnie z metodologią SMART. Zarządzaj celami, planuj etapy, monitoruj ryzyka i śledź postępy.")
-                            .font(.subheadline).foregroundColor(.text2).lineSpacing(4)
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 16) {
+                // App Header
+                VStack(spacing: 12) {
+                    ZStack {
+                        Circle().fill(Color.accentBg).frame(width: 72, height: 72)
+                        Circle().stroke(Color.accent.opacity(0.3), lineWidth: 2).frame(width: 54, height: 54)
+                        Text("GT")
+                            .font(.system(size: 22, weight: .black, design: .rounded))
+                            .foregroundColor(.accent)
                     }
-                    .cardStyle()
-
-                    // Server
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Serwer API").font(.system(size: 18, weight: .bold))
-                        TextField("URL API", text: $apiURL)
-                            .textFieldStyle(.plain)
-                            .padding(14)
-                            .background(Color.card)
-                            .cornerRadius(12)
-                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.border))
-                            .autocapitalization(.none)
-                            .keyboardType(.URL)
-                            .onSubmit { saveURL() }
-
-                        HStack(spacing: 12) {
-                            Button { saveURL() } label: {
-                                Text("Zapisz")
-                                    .font(.system(size: 14, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 20).padding(.vertical, 10)
-                                    .background(Color.primary)
-                                    .cornerRadius(10)
-                            }
-
-                            Button { testConnection() } label: {
-                                HStack(spacing: 6) {
-                                    if isTesting { ProgressView().scaleEffect(0.8) }
-                                    Text("Test połączenia")
-                                }
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundColor(.text2)
-                                .padding(.horizontal, 20).padding(.vertical, 10)
-                                .background(Color.card)
-                                .cornerRadius(10)
-                                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.border))
-                            }
-                        }
-
-                        if let status = connectionStatus {
-                            HStack(spacing: 8) {
-                                Circle()
-                                    .fill(status.contains("OK") ? Color.success : Color.danger)
-                                    .frame(width: 10, height: 10)
-                                Text(status)
-                                    .font(.caption)
-                                    .foregroundColor(status.contains("OK") ? .success : .danger)
-                            }
-                        }
-                    }
-                    .cardStyle()
-
-                    // Widgets Info
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Widgety").font(.system(size: 18, weight: .bold))
-                        Text("Aby dodać widget na ekran główny iPada:")
-                            .font(.subheadline).foregroundColor(.text2)
-                        VStack(alignment: .leading, spacing: 6) {
-                            infoRow("1", "Przytrzymaj palec na ekranie głównym")
-                            infoRow("2", "Stuknij + w lewym górnym rogu")
-                            infoRow("3", "Wyszukaj \"GoalTracker\"")
-                            infoRow("4", "Wybierz rozmiar widgetu i dodaj")
-                        }
-                    }
-                    .cardStyle()
-
-                    // Features
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Funkcje").font(.system(size: 18, weight: .bold))
-                        featureRow("target", "Cele SMART", "Definiuj cele z oceną jakości S.M.A.R.T.")
-                        featureRow("flag.fill", "Kamienie milowe", "Śledź kluczowe etapy realizacji")
-                        featureRow("checklist", "Zadania", "Zarządzaj zadaniami dla każdego celu")
-                        featureRow("exclamationmark.triangle.fill", "Macierz ryzyk", "Identyfikuj i mityguj zagrożenia")
-                        featureRow("calendar", "Planer", "Oś czasu, kalendarz i widok Kanban")
-                        featureRow("square.grid.2x2.fill", "Widgety", "Countdown i postęp na ekranie głównym")
-                    }
-                    .cardStyle()
+                    Text("GoalTracker SMART")
+                        .font(.system(size: 22, weight: .heavy, design: .rounded))
+                        .foregroundColor(.panelText)
+                    Text("Wersja 1.0.0 · Native iPadOS")
+                        .font(.system(size: 12))
+                        .foregroundColor(.panelText3)
+                    Text("Twój osobisty asystent w planowaniu i realizacji\ncelów zgodnie z metodologią SMART.")
+                        .font(.system(size: 14))
+                        .foregroundColor(.panelText2)
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(3)
                 }
-                .padding()
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 24)
+                .whiteCard()
+
+                // Server
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("Serwer API")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.panelText)
+                    TextField("URL API", text: $apiURL)
+                        .font(.system(size: 14))
+                        .padding(14)
+                        .background(Color.panelCard)
+                        .cornerRadius(12)
+                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.panelBorder))
+                        .autocapitalization(.none)
+                        .keyboardType(.URL)
+                        .onSubmit { saveURL() }
+
+                    HStack(spacing: 10) {
+                        Button { saveURL() } label: {
+                            Text("Zapisz")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 10)
+                                .background(Color.accent)
+                                .cornerRadius(10)
+                        }
+                        Button { testConnection() } label: {
+                            HStack(spacing: 6) {
+                                if isTesting { ProgressView().scaleEffect(0.7) }
+                                Text("Test")
+                            }
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(.panelText2)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 10)
+                            .background(Color.panelCard)
+                            .cornerRadius(10)
+                        }
+                    }
+
+                    if let status = connectionStatus {
+                        HStack(spacing: 6) {
+                            Circle()
+                                .fill(status.contains("OK") ? Color.successGreen : Color.dangerRed)
+                                .frame(width: 8, height: 8)
+                            Text(status)
+                                .font(.system(size: 12))
+                                .foregroundColor(status.contains("OK") ? .successGreen : .dangerRed)
+                        }
+                    }
+                }
+                .whiteCard()
+
+                // Widgets
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Widgety na ekranie głównym")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.panelText)
+                    VStack(alignment: .leading, spacing: 8) {
+                        stepRow(1, "Przytrzymaj palec na ekranie głównym")
+                        stepRow(2, "Stuknij + w lewym górnym rogu")
+                        stepRow(3, "Wyszukaj \"GoalTracker\"")
+                        stepRow(4, "Wybierz rozmiar i dodaj")
+                    }
+                }
+                .whiteCard()
+
+                // Features
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Funkcje")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.panelText)
+                    featureRow("Cele SMART", "Definiuj cele z oceną jakości", .goalPink)
+                    featureRow("Kamienie milowe", "Śledź kluczowe etapy", .goalBlue)
+                    featureRow("Zadania", "Zarządzaj zadaniami", .goalPurple)
+                    featureRow("Macierz ryzyk", "Identyfikuj zagrożenia", .goalOrange)
+                    featureRow("Planer", "Oś czasu, kalendarz, Kanban", .goalTeal)
+                    featureRow("Widgety", "Countdown na ekranie głównym", .accent)
+                }
+                .whiteCard()
             }
-            .background(Color.bg)
-            .navigationTitle("Info")
+            .padding(24)
         }
+        .background(Color.panelBg)
     }
 
     func saveURL() {
@@ -125,7 +130,7 @@ struct SettingsView: View {
         Task {
             do {
                 let _: DashboardStats = try await APIService.shared.getStats()
-                connectionStatus = "OK - Połączono z serwerem"
+                connectionStatus = "OK - Połączono"
             } catch {
                 connectionStatus = "Błąd: \(error.localizedDescription)"
             }
@@ -133,31 +138,29 @@ struct SettingsView: View {
         }
     }
 
-    func infoRow(_ num: String, _ text: String) -> some View {
+    func stepRow(_ num: Int, _ text: String) -> some View {
         HStack(spacing: 10) {
-            Text(num)
-                .font(.system(size: 12, weight: .bold))
-                .frame(width: 22, height: 22)
-                .background(Color.primary)
-                .foregroundColor(.white)
-                .clipShape(Circle())
-            Text(text).font(.subheadline).foregroundColor(.text2)
+            ZStack {
+                Circle().fill(Color.accent).frame(width: 22, height: 22)
+                Text("\(num)")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(.white)
+            }
+            Text(text).font(.system(size: 13)).foregroundColor(.panelText2)
         }
     }
 
-    func featureRow(_ icon: String, _ title: String, _ desc: String) -> some View {
+    func featureRow(_ title: String, _ desc: String, _ color: Color) -> some View {
         HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 16))
-                .foregroundColor(.primary)
+            Circle()
+                .fill(color.opacity(0.15))
                 .frame(width: 32, height: 32)
-                .background(Color.primary.opacity(0.15))
-                .cornerRadius(8)
+                .overlay(Circle().fill(color).frame(width: 10, height: 10))
             VStack(alignment: .leading, spacing: 1) {
-                Text(title).font(.system(size: 14, weight: .semibold))
-                Text(desc).font(.caption).foregroundColor(.text2)
+                Text(title).font(.system(size: 13, weight: .semibold)).foregroundColor(.panelText)
+                Text(desc).font(.system(size: 11)).foregroundColor(.panelText3)
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 3)
     }
 }
